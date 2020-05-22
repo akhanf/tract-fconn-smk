@@ -28,7 +28,7 @@ rule gen_5tt:
     input: 
         lut_input = '../resources/lut/FreeSurferColorLUT.txt',
         lut_output = '../resources/lut/FreeSurfer2ACT.txt',
-        aparcaseg_nii = join(config['fmriprep_dir'],config['in_aparcaseg_nii'])
+        aparcaseg_nii = config['in_aparcaseg_nii']
     output:
         indices_mif = 'results/sub-{subject}/mrtrix/indices.mif',
         cgm_mif = temp('results/sub-{subject}/mrtrix/cgm.mif'),
@@ -171,7 +171,7 @@ rule run_sift2:
 
 rule convert_atlas_labels:
     input:
-        aparcaseg_nii = join(config['fmriprep_dir'],'sub-{subject}/anat/sub-{subject}_desc-aparcaseg_dseg.nii.gz'),
+        aparcaseg_nii = config['in_aparcaseg_nii'],
         lut_in = '../resources/lut/FreeSurferColorLUT.txt',
         lut_out = '../resources/lut/fs_default.txt'
     output:

@@ -6,7 +6,7 @@ tasks:
 
 #TODO: add hierarchy to group fmriprep and prepdwi config
 
-fmriprep_dir: /project/6007967/cfmm-projects/Peters/tle3T_phase2/derivatives/fmriprep_1.5.0_outputs/fmriprep
+fmriprep_dir: ../fmriprep_1.5.4_noreconall/fmriprep/
 
 #paths are relative to fmriprep dir (version 1.5.4) - can later use pybids to get these 
 # when you run fmriprep, required to use:  --output-space T1w 
@@ -14,7 +14,14 @@ in_bold_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_desc
 in_boldref_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_boldref.nii.gz'
 in_bold_mask_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_desc-brain_mask.nii.gz'
 in_confounds_tsv: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_desc-confounds_regressors.tsv'
-in_aparcaseg_nii: 'sub-{subject}/anat/sub-{subject}_desc-aparcaseg_dseg.nii.gz' #this is used in mrtrix to get 5tt_seg
+
+
+
+#this is used in mrtrix to get 5tt_seg
+#aparcaseg from freesurfer (or fmriprep indirectly): - #TODO replace this with 5ttgen_fsl processing
+in_aparcaseg_nii: '/project/6007967/cfmm-projects/Peters/tle3T_phase2/derivatives/fmriprep_1.5.0_outputs/fmriprep/sub-{subject}/anat/sub-{subject}_desc-aparcaseg_dseg.nii.gz' 
+
+
 
 #fyi I just chose these arbitrarily :)  AK
 confounds_to_use:

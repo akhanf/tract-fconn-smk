@@ -1,0 +1,4 @@
+channels:
+ - conda-forge
+packages:
+ - nilearn=0.6.2

@@ -1,0 +1,50 @@
+participants_tsv: 'config/participants.tsv'
+
+
+tasks: 
+ - rest
+
+#TODO: add hierarchy to group fmriprep and prepdwi config
+
+fmriprep_dir: /project/6007967/cfmm-projects/Peters/tle3T_phase2/derivatives/fmriprep_1.5.0_outputs/fmriprep
+
+#paths are relative to fmriprep dir (version 1.5.4) - can later use pybids to get these 
+# when you run fmriprep, required to use:  --output-space T1w 
+in_bold_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_desc-preproc_bold.nii.gz'
+in_boldref_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_boldref.nii.gz'
+in_bold_mask_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_desc-brain_mask.nii.gz'
+in_confounds_tsv: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_desc-confounds_regressors.tsv'
+in_aparcaseg_nii: 'sub-{subject}/anat/sub-{subject}_desc-aparcaseg_dseg.nii.gz' #this is used in mrtrix to get 5tt_seg
+
+#fyi I just chose these arbitrarily :)  AK
+confounds_to_use:
+ - white_matter
+ - csf
+ - trans_x
+ - trans_y
+ - trans_z
+ - rot_x
+ - rot_y
+ - rot_z
+
+prepdwi_dir: ../prepdwi_v0.0.12d_multiband/prepdwi
+
+#paths relative to prepdwi - needs to be preprocessed dwi in T1w space
+in_dwi_nii: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_preproc.nii.gz'
+in_dwi_bval: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_preproc.bval'
+in_dwi_bvec: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_preproc.bvec'
+in_dwi_mask_nii: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_brainmask.nii.gz'
+
+
+#this has fsl6 and mrtrix3_RC3
+singularity: /project/6007967/akhanf/singularity/bids-apps/khanlab_prepdwi_latest.sif
+
+
+#tckgen - use 10million if using sift..
+ntracts_million: 0.1
+
+
+#tckmap: 
+stat_tck: 'sum' #sum the fconn over a streamline's points, was used in original Calamante 2013 TWFC paper
+stat_vox: 'mean' #take mean over all streamlines at each voxel to get TWFC map 
+vox_res_mm: 0.5  #resolution to sample streamlines - can be super-resolved..

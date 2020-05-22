@@ -1,0 +1,112 @@
+from os.path import join
+import pandas as pd
+
+configfile: 'config/config.yml'
+
+df = pd.read_table(config['participants_tsv'])
+subjects = df.participant_id.to_list() 
+subjects = [ s.strip('sub-') for s in subjects ]
+
+tasks = config['tasks']
+
+
+#TODO add schema validation
+
+
+
+rule all:
+    input:  
+        conn = expand('results/sub-{subject}/tckfc_{task}_4d.nii.gz',subject=subjects,task=tasks)
+
+
+rule denoise:
+    input: 
+        nii = join(config['fmriprep_dir'],config['in_bold_nii']),
+        confounds_tsv = join(config['fmriprep_dir'],config['in_confounds_tsv']),
+        mask_nii = join(config['fmriprep_dir'],config['in_bold_mask_nii']),
+    params:
+        confounds_to_use = config['confounds_to_use']
+    output:
+        denoised = 'results/sub-{subject}/sub-{subject}_task-{task}_denoised.nii.gz'
+    #group: 'func'
+    conda:
+        'envs/nilearn.yml'
+    log: 'results/logs/denoise/sub-{subject}_task-{task}.log'
+    script: 'scripts/denoise.py'
+
+checkpoint melodic:
+    input:
+        denoised = 'results/sub-{subject}/sub-{subject}_task-{task}_denoised.nii.gz',
+        bgimage = join(config['fmriprep_dir'],config['in_boldref_nii']),
+        mask = join(config['fmriprep_dir'],config['in_bold_mask_nii']),
+    output: directory('results/sub-{subject}/melodic_{task}')
+    envmodules: 'fsl'
+    #group: 'func'
+    container: config['singularity']
+    log: 'results/logs/melodic/sub-{subject}_task-{task}.txt'
+    shell: 'melodic -i {input.denoised} --outdir={output} --Oall --report --bgimage={input.bgimage} --mask={input.mask} --verbose &> {log}'
+
+
+#this includes all rules for mrtrix processing & tracking involving dwi, except for tract-weighted functional connectivity 
+include: 'rules/mrtrix.smk'
+
+#this rule is dependent on melodic completing, as it uses the {ic} wildcard.. it won't be part of the dag until after the checkpoint (melodic) completes
+rule map_tckfc:
+    input:
+        tracts = 'results/sub-{subject}/mrtrix/tracts.tck',
+        in_probmap = 'results/sub-{subject}/melodic_{task}/stats/probmap_{ic}.nii.gz',
+        b0_mif = 'results/sub-{subject}/mrtrix/b0.mif'
+    params:
+        stat_tck = f"-stat_tck {config['stat_tck']}",
+        stat_vox = f"-stat_vox {config['stat_vox']}",
+        vox = f"-vox {config['vox_res_mm']}" 
+    output:
+        out_tckmap = 'results/sub-{subject}/tckfc_{task}/tckfc_{ic}.nii.gz'
+    container: config['singularity']
+    threads: 8
+    log: 'results/logs/tckfc_{task}/sub-{subject}_task-{task}_ic-{ic}.log'
+    shell: 
+        'tckmap -nthreads {threads} -template {input.b0_mif}  -contrast scalar_map'
+        ' {params.vox} {params.stat_tck} {params.stat_vox}'
+        ' -image {input.in_probmap} {input.tracts} {output.out_tckmap} &> {log}'
+
+
+#this rule uses the checkpoint output to get the tckfc outputs, using the probmap_{ic} files to get wildcards
+def get_tckfc_maps(wildcards):
+    checkpoint_melodic_dir = checkpoints.melodic.get(**wildcards).output[0]
+    return expand('results/sub-{subject}/tckfc_{task}/tckfc_{ic}.nii.gz',
+           subject=wildcards.subject,
+           task=wildcards.task,
+           ic=glob_wildcards(join(checkpoint_melodic_dir, 'stats/probmap_{ic}.nii.gz')).ic)
+
+#in this rule, we use an input function (above) to expand over {ic}, using the glob_wildcards over the generated files ICs
+# we need to have some sort of a "merge" rule like this, in order to glob_wildcards..
+rule merge_tckfc:
+    input: get_tckfc_maps
+    output: 'results/sub-{subject}/tckfc_{task}_4d.nii.gz'
+    envmodules: 'fsl'
+    container: config['singularity']
+    log: 'results/logs/merge_tckfc/sub-{subject}_task-{task}.log'
+    shell: 'fslmerge -t {output} {input} &> {log}'
+        
+    
+   
+"""
+# had issues with getting tckdfc to write output to file, so using tckmap instead 
+# tckmap is probably better anyways, since it also allows tract weighting file to be used (i.e. from SIFT2)
+# and in general is more flexible.. 
+
+rule tck_static_fconn:
+    input:
+         denoised = 'results/sub-{subject}/sub-{subject}_task-rest_denoised.nii.gz',
+         tracts = 'results/sub-{subject}/mrtrix/tracts.tck',
+         b0_mif = 'results/sub-{subject}/mrtrix/b0.mif'
+    output:
+         fconn = 'results/sub-{subject}/tck_static_fconn.mif'
+    #group: 'func'
+    log: 'results/logs/tck_static_fconn/sub-{subject}.txt'
+    container: config['singularity']
+    threads: 8
+    shell: 'tckdfc -debug -nthreads {threads} -template {input.b0_mif} -static {input.tracts} {input.denoised} {output.fconn}'
+
+"""

@@ -26,8 +26,8 @@ rule convert_to_mif:
 
 rule gen_5tt:
     input: 
-        lut_input = '../resources/lut/FreeSurferColorLUT.txt',
-        lut_output = '../resources/lut/FreeSurfer2ACT.txt',
+        lut_input = 'resources/lut/FreeSurferColorLUT.txt',
+        lut_output = 'resources/lut/FreeSurfer2ACT.txt',
         aparcaseg_nii = config['in_aparcaseg_nii']
     output:
         indices_mif = 'results/sub-{subject}/mrtrix/indices.mif',
@@ -172,8 +172,8 @@ rule run_sift2:
 rule convert_atlas_labels:
     input:
         aparcaseg_nii = config['in_aparcaseg_nii'],
-        lut_in = '../resources/lut/FreeSurferColorLUT.txt',
-        lut_out = '../resources/lut/fs_default.txt'
+        lut_in = 'resources/lut/FreeSurferColorLUT.txt',
+        lut_out = 'resources/lut/fs_default.txt'
     output:
         atlas_labels = 'results/sub-{subject}/mrtrix/atlas_aparcaseg.nii.gz'
     envmodules: 

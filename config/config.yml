@@ -48,7 +48,7 @@ singularity: /project/6007967/akhanf/singularity/bids-apps/khanlab_prepdwi_lates
 
 
 #tckgen - use 10million if using sift..
-ntracts_million: 0.1
+ntracts_million: 1
 
 
 #tckmap: 

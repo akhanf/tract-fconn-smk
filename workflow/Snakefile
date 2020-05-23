@@ -55,7 +55,8 @@ rule map_tckfc:
     input:
         tracts = 'results/sub-{subject}/mrtrix/tracts.tck',
         in_probmap = 'results/sub-{subject}/melodic_{task}/stats/probmap_{ic}.nii.gz',
-        b0_mif = 'results/sub-{subject}/mrtrix/b0.mif'
+        b0_mif = 'results/sub-{subject}/mrtrix/b0.mif',
+        weights = 'results/sub-{subject}/mrtrix/sift2_weights.txt'
     params:
         stat_tck = f"-stat_tck {config['stat_tck']}",
         stat_vox = f"-stat_vox {config['stat_vox']}",
@@ -68,6 +69,7 @@ rule map_tckfc:
     shell: 
         'tckmap -nthreads {threads} -template {input.b0_mif}  -contrast scalar_map'
         ' {params.vox} {params.stat_tck} {params.stat_vox}'
+        ' -tck_weights_in {input.weights}'
         ' -image {input.in_probmap} {input.tracts} {output.out_tckmap} &> {log}'
 
 
@@ -79,6 +81,7 @@ def get_tckfc_maps(wildcards):
            task=wildcards.task,
            ic=glob_wildcards(join(checkpoint_melodic_dir, 'stats/probmap_{ic}.nii.gz')).ic)
 
+
 #in this rule, we use an input function (above) to expand over {ic}, using the glob_wildcards over the generated files ICs
 # we need to have some sort of a "merge" rule like this, in order to glob_wildcards..
 rule merge_tckfc:
@@ -88,9 +91,10 @@ rule merge_tckfc:
     container: config['singularity']
     log: 'results/logs/merge_tckfc/sub-{subject}_task-{task}.log'
     shell: 'fslmerge -t {output} {input} &> {log}'
-        
-    
-   
+
+
+
+  
 """
 # had issues with getting tckdfc to write output to file, so using tckmap instead 
 # tckmap is probably better anyways, since it also allows tract weighting file to be used (i.e. from SIFT2)

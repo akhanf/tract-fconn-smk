@@ -8,7 +8,7 @@ subjects = df.participant_id.to_list()
 subjects = [ s.strip('sub-') for s in subjects ]
 
 tasks = config['tasks']
-
+seeds = config['seeds']
 
 #TODO add schema validation
 
@@ -16,8 +16,8 @@ tasks = config['tasks']
 
 rule all:
     input:  
-        conn = expand('results/sub-{subject}/tckfc_{task}_4d.nii.gz',subject=subjects,task=tasks)
-
+        #conn = expand('results/sub-{subject}/tckfc_{task}_4d.nii.gz',subject=subjects,task=tasks)
+        out_tckmap = expand('results/sub-{subject}/sub-{subject}_task-{task}_seed-{seed}_tckfc.nii.gz',subject=subjects,task=tasks,seed=seeds)
 
 rule denoise:
     input: 
@@ -33,6 +33,55 @@ rule denoise:
         'envs/nilearn.yml'
     log: 'results/logs/denoise/sub-{subject}_task-{task}.log'
     script: 'scripts/denoise.py'
+
+
+rule seed_fconn:
+    input:
+        denoised = 'results/sub-{subject}/sub-{subject}_task-{task}_denoised.nii.gz',
+        seed_aseg = config['in_seed_nii'],
+        brain_mask = join(config['fmriprep_dir'],config['in_bold_mask_nii']),
+        t1w = join(config['fmriprep_dir'],config['in_t1w_nii']) #t1w used just for visualization in the notebook..
+    params:
+        seed_label = lambda wildcards: config['seed_labels'][wildcards.seed],
+        seed_name = '{seed}',
+        fwhm = 8, # smoothing for connectivity mask
+        r_threshold = 0.3 # threshold for connectivity
+    output:
+        seed_fconn = 'results/sub-{subject}/sub-{subject}_task-{task}_seed-{seed}_fconn.nii.gz'
+    conda:
+        'envs/nilearn.yml'
+    log: 
+        notebook = 'results/notebooks/seed_conn/seed_conn_sub-{subject}_task-{task}_seed-{seed}.py.ipynb'
+    notebook:
+        'notebooks/seed_conn.py.ipynb'
+
+
+rule tck_seed_fconn:
+    input:
+        tracts = 'results/sub-{subject}/mrtrix/tracts.tck',
+        seed_fconn = 'results/sub-{subject}/sub-{subject}_task-{task}_seed-{seed}_fconn.nii.gz',
+        b0_mif = 'results/sub-{subject}/mrtrix/b0.mif',
+        weights = 'results/sub-{subject}/mrtrix/sift2_weights.txt'
+    params:
+        stat_tck = f"-stat_tck {config['stat_tck']}",
+        stat_vox = f"-stat_vox {config['stat_vox']}",
+        vox = f"-vox {config['vox_res_mm']}" 
+    output:
+        out_tckmap = 'results/sub-{subject}/sub-{subject}_task-{task}_seed-{seed}_tckfc.nii.gz'
+    container: config['singularity']
+    threads: 8
+    log: 'results/logs/tck_seed_fconn/sub-{subject}_task-{task}_seed-{seed}.log'
+    shell: 
+        'tckmap -nthreads {threads} -template {input.b0_mif}  -contrast scalar_map'
+        ' {params.vox} {params.stat_tck} {params.stat_vox}'
+        ' -tck_weights_in {input.weights}'
+        ' -image {input.seed_fconn} {input.tracts} {output.out_tckmap} &> {log}'
+
+
+
+
+
+#--- below for melodic ICA and tract-weighted FC on IC probmaps -- 
 
 checkpoint melodic:
     input:
@@ -51,7 +100,7 @@ checkpoint melodic:
 include: 'rules/mrtrix.smk'
 
 #this rule is dependent on melodic completing, as it uses the {ic} wildcard.. it won't be part of the dag until after the checkpoint (melodic) completes
-rule map_tckfc:
+rule map_tckfc_ica:
     input:
         tracts = 'results/sub-{subject}/mrtrix/tracts.tck',
         in_probmap = 'results/sub-{subject}/melodic_{task}/stats/probmap_{ic}.nii.gz',
@@ -84,13 +133,15 @@ def get_tckfc_maps(wildcards):
 
 #in this rule, we use an input function (above) to expand over {ic}, using the glob_wildcards over the generated files ICs
 # we need to have some sort of a "merge" rule like this, in order to glob_wildcards..
-rule merge_tckfc:
+rule merge_tckfc_ica:
     input: get_tckfc_maps
     output: 'results/sub-{subject}/tckfc_{task}_4d.nii.gz'
     envmodules: 'fsl'
     container: config['singularity']
     log: 'results/logs/merge_tckfc/sub-{subject}_task-{task}.log'
     shell: 'fslmerge -t {output} {input} &> {log}'
+
+
 
 
 

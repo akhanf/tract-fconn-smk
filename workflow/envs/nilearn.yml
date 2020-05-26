@@ -1,4 +1,8 @@
 channels:
  - conda-forge
-packages:
+dependencies:
  - nilearn=0.6.2
+ - nibabel
+ - matplotlib
+ - pandas
+ - jupyter

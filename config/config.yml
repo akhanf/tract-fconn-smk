@@ -7,7 +7,7 @@ tasks:
 #TODO: add hierarchy to group fmriprep and prepdwi config
 
 
-in_seed_nii: '/project/6007967/cfmm-projects/Peters/tle3T_phase2/derivatives/fmriprep_1.5.0_outputs/fmriprep/sub-{subject}/anat/sub-{subject}_desc-aparcaseg_dseg.nii.gz' 
+in_seed_nii: '../fmriprep_20.2.1_bold/sub-{subject}/anat/sub-{subject}_acq-MP2RAGEpostproc_run-1_desc-aparcaseg_dseg.nii.gz'
 
 seeds:
   - lhipp
@@ -19,22 +19,20 @@ seed_labels:
 
 
 
-fmriprep_dir: ../fmriprep_1.5.4_noreconall/fmriprep/
+fmriprep_dir: ../fmriprep_20.2.1_bold
 
 #paths are relative to fmriprep dir (version 1.5.4) - can later use pybids to get these 
 # when you run fmriprep, required to use:  --output-space T1w 
-in_bold_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_desc-preproc_bold.nii.gz'
-in_boldref_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_boldref.nii.gz'
-in_bold_mask_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_space-T1w_desc-brain_mask.nii.gz'
-in_confounds_tsv: 'sub-{subject}/func/sub-{subject}_task-{task}_run-01_desc-confounds_regressors.tsv'
-in_t1w_nii: 'sub-{subject}/anat/sub-{subject}_desc-preproc_T1w.nii.gz'
-
+in_bold_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_space-T1w_desc-preproc_bold.nii.gz'
+in_boldref_nii: 'sub-{subject}/func/sub-{subject}_task-{task}__space-T1w_boldref.nii.gz'
+in_bold_mask_nii: 'sub-{subject}/func/sub-{subject}_task-{task}_space-T1w_desc-brain_mask.nii.gz'
+in_confounds_tsv: 'sub-{subject}/func/sub-{subject}_task-{task}_desc-confounds_timeseries.tsv'
+in_t1w_nii: 'sub-{subject}/anat/sub-{subject}_acq-MP2RAGEpostproc_run-1_desc-preproc_T1w.nii.gz'
 
 
 #this is used in mrtrix to get 5tt_seg
 #aparcaseg from freesurfer (or fmriprep indirectly): - #TODO replace this with 5ttgen_fsl processing
-in_aparcaseg_nii: '/project/6007967/cfmm-projects/Peters/tle3T_phase2/derivatives/fmriprep_1.5.0_outputs/fmriprep/sub-{subject}/anat/sub-{subject}_desc-aparcaseg_dseg.nii.gz' 
-
+in_aparcaseg_nii: '../fmriprep_20.2.1_bold/sub-{subject}/anat/sub-{subject}_acq-MP2RAGEpostproc_run-1_desc-aparcaseg_dseg.nii.gz'
 
 
 #fyi I just chose these arbitrarily :)  AK
@@ -48,17 +46,17 @@ confounds_to_use:
  - rot_y
  - rot_z
 
-prepdwi_dir: ../prepdwi_v0.0.12d_multiband/prepdwi
+prepdwi_dir: ../snakedwi_dev/results
 
 #paths relative to prepdwi - needs to be preprocessed dwi in T1w space
-in_dwi_nii: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_preproc.nii.gz'
-in_dwi_bval: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_preproc.bval'
-in_dwi_bvec: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_preproc.bvec'
-in_dwi_mask_nii: 'sub-{subject}/dwi/sub-{subject}_dwi_space-T1w_brainmask.nii.gz'
+in_dwi_nii: 'sub-{subject}/dwi/sub-{subject}_space-T1w_res-orig_desc-eddy_dwi.nii.gz'
+in_dwi_bval: 'sub-{subject}/dwi/sub-{subject}_space-T1w_res-orig_desc-eddy_dwi.bval'
+in_dwi_bvec: 'sub-{subject}/dwi/sub-{subject}_space-T1w_res-orig_desc-eddy_dwi.bvec'
+in_dwi_mask_nii: 'sub-{subject}/dwi/sub-{subject}_space-T1w_res-orig_desc-brain_mask.nii.gz'
 
 
 #this has fsl6 and mrtrix3_RC3
-singularity: /project/6007967/akhanf/singularity/bids-apps/khanlab_prepdwi_latest.sif
+singularity: /project/6050199/akhanf/singularity/bids-apps/khanlab_prepdwi_latest.sif
 
 
 #tckgen - use 10million if using sift..
